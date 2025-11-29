@@ -1,0 +1,283 @@
+import React, { useState, useEffect } from 'react';
+import { Rocket, Wallet, Zap, Layers, Image as ImageIcon, CheckCircle, Loader, Terminal, Box } from 'lucide-react';
+
+// --- CONFIGURATION ---
+// Remplace ceci par l'URL de ton Webhook n8n "Create Order"
+const N8N_WEBHOOK_URL = "https://ton-n8n.com/webhook/create-order"; 
+
+const App = () => {
+  // --- STATE MANAGEMENT ---
+  const [view, setView] = useState('home'); // 'home', 'create', 'dashboard'
+  const [wallet, setWallet] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    prompt: '',
+    packType: 'single', // 'single', 'pack5'
+    tier: 'starter', // 'starter', 'pro', 'whale'
+    rarityOverride: ''
+  });
+
+  // Mock Wallet Connection
+  const connectWallet = () => {
+    // Dans une vraie app, ici on utiliserait waxjs ou ual-wax
+    setLoading(true);
+    setTimeout(() => {
+      setWallet('user.wam'); // Mock wallet
+      setLoading(false);
+      showNotification('Wallet WAX connecté avec succès !', 'success');
+    }, 1000);
+  };
+
+  const handleLogout = () => {
+    setWallet(null);
+    setView('home');
+    showNotification('Déconnecté.', 'info');
+  };
+
+  // Handle Order Submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!wallet) return showNotification('Veuillez connecter votre wallet d\'abord.', 'error');
+    if (!formData.prompt) return showNotification('Le prompt est obligatoire.', 'error');
+
+    setLoading(true);
+
+    try {
+      // Simulation d'envoi vers n8n
+      // En prod : await fetch(N8N_WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ ...formData, wallet }) });
+      
+      console.log("Envoi vers n8n :", { ...formData, wallet });
+      
+      // Simulation délai réseau
+      await new Promise(r => setTimeout(r, 2000));
+      
+      setLoading(false);
+      showNotification('Commande envoyée ! Votre NFT arrive bientôt.', 'success');
+      setView('dashboard');
+    } catch (error) {
+      setLoading(false);
+      showNotification('Erreur lors de la commande.', 'error');
+    }
+  };
+
+  // Notification Helper
+  const showNotification = (msg, type) => {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  // --- COMPONENTS ---
+
+  const Navbar = () => (
+    <nav className="flex justify-between items-center p-6 border-b border-gray-800 bg-black/50 backdrop-blur-md sticky top-0 z-50">
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('home')}>
+        <Zap className="text-yellow-400 fill-current" size={24} />
+        <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">
+          ARTOMATIQUE
+        </span>
+      </div>
+      <div className="flex gap-4 items-center">
+        {wallet ? (
+          <>
+            <button onClick={() => setView('create')} className={`px-4 py-2 rounded-lg font-medium transition ${view === 'create' ? 'text-yellow-400' : 'text-gray-400 hover:text-white'}`}>Créer</button>
+            <button onClick={() => setView('dashboard')} className={`px-4 py-2 rounded-lg font-medium transition ${view === 'dashboard' ? 'text-yellow-400' : 'text-gray-400 hover:text-white'}`}>Mes NFTs</button>
+            <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded-full border border-gray-700">
+              <span className="text-green-400 text-sm font-mono">●</span>
+              <span className="text-gray-300 font-mono text-sm">{wallet}</span>
+              <button onClick={handleLogout} className="ml-2 text-xs text-red-400 hover:text-red-300">X</button>
+            </div>
+          </>
+        ) : (
+          <button 
+            onClick={connectWallet}
+            className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-2 rounded-full font-bold transition transform hover:scale-105"
+          >
+            <Wallet size={18} /> Connecter WAX
+          </button>
+        )}
+      </div>
+    </nav>
+  );
+
+  const Hero = () => (
+    <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
+      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2874&auto=format&fit=crop')] opacity-10 bg-cover bg-center pointer-events-none"></div>
+      <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tighter">
+        L'ART DEVIENT <br />
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-pulse">
+          AUTOMATIQUE
+        </span>
+      </h1>
+      <p className="text-xl text-gray-400 max-w-2xl mb-10">
+        Transformez vos idées en NFTs uniques sur la blockchain WAX en quelques secondes. 
+        Génération par IA. Minting instantané. Zéro code.
+      </p>
+      <div className="flex gap-4">
+        <button onClick={() => wallet ? setView('create') : connectWallet()} className="bg-white text-black px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-200 transition shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+          Lancer la Machine
+        </button>
+        <button className="border border-gray-600 text-gray-300 px-8 py-4 rounded-lg font-bold text-lg hover:border-white hover:text-white transition">
+          Voir la Galerie
+        </button>
+      </div>
+      
+      <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 text-left w-full max-w-5xl">
+        <FeatureCard icon={<Terminal size={32} className="text-blue-400" />} title="Prompt to NFT" desc="Décrivez simplement votre vision. Notre IA s'occupe de la générer et de l'optimiser." />
+        <FeatureCard icon={<Box size={32} className="text-purple-400" />} title="Packs & Rareté" desc="Créez des boosters packs avec des taux de drop et des raretés (Commun, Rare, Légendaire)." />
+        <FeatureCard icon={<Rocket size={32} className="text-pink-400" />} title="Minting WAX" desc="Vos créations sont immédiatement mintées et transférées sur votre wallet AtomicHub." />
+      </div>
+    </div>
+  );
+
+  const CreateView = () => (
+    <div className="max-w-4xl mx-auto py-12 px-6 animate-in fade-in slide-in-from-bottom-10 duration-500">
+      <h2 className="text-4xl font-bold mb-8 flex items-center gap-3">
+        <Layers className="text-blue-500" /> Configurer la Commande
+      </h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Formulaire */}
+        <div className="md:col-span-2 bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-xl">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            <div>
+              <label className="block text-gray-400 text-sm font-bold mb-2">VOTRE PROMPT (DESCRIPTION)</label>
+              <textarea 
+                value={formData.prompt}
+                onChange={(e) => setFormData({...formData, prompt: e.target.value})}
+                placeholder="Ex: Un samouraï cyberpunk méditant sous un néon rouge, style synthwave..." 
+                className="w-full bg-black border border-gray-700 rounded-xl p-4 text-white focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none min-h-[120px]"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-400 text-sm font-bold mb-2">TYPE DE PRODUIT</label>
+                <select 
+                  value={formData.packType}
+                  onChange={(e) => setFormData({...formData, packType: e.target.value})}
+                  className="w-full bg-black border border-gray-700 rounded-xl p-3 text-white outline-none"
+                >
+                  <option value="single">Carte Unique (1 NFT)</option>
+                  <option value="pack5">Booster Pack (5 NFTs)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm font-bold mb-2">TIER DE QUALITÉ</label>
+                <select 
+                  value={formData.tier}
+                  onChange={(e) => setFormData({...formData, tier: e.target.value})}
+                  className="w-full bg-black border border-gray-700 rounded-xl p-3 text-white outline-none"
+                >
+                  <option value="starter">Starter (Standard)</option>
+                  <option value="pro">Pro (Haute Résolution)</option>
+                  <option value="whale">Whale (Premium + Reroll)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Price Estimator */}
+            <div className="bg-gray-800/50 rounded-xl p-4 flex justify-between items-center border border-gray-700">
+              <span className="text-gray-400">Coût estimé :</span>
+              <span className="text-2xl font-bold text-yellow-400 font-mono">
+                {formData.packType === 'pack5' ? '15' : '3'} WAX
+              </span>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition ${loading ? 'bg-gray-700 cursor-not-allowed' : 'bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-black'}`}
+            >
+              {loading ? <><Loader className="animate-spin" /> Traitement en cours...</> : <><Zap fill="black" /> LANCER LA PRODUCTION</>}
+            </button>
+          </form>
+        </div>
+
+        {/* Sidebar Info */}
+        <div className="space-y-6">
+          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl">
+            <h3 className="font-bold text-lg mb-4 text-gray-200">Comment ça marche ?</h3>
+            <ul className="space-y-3 text-gray-400 text-sm">
+              <li className="flex gap-2"><CheckCircle size={16} className="text-green-500 shrink-0" /> Votre prompt est envoyé à notre IA.</li>
+              <li className="flex gap-2"><CheckCircle size={16} className="text-green-500 shrink-0" /> L'image est générée et stockée sur IPFS.</li>
+              <li className="flex gap-2"><CheckCircle size={16} className="text-green-500 shrink-0" /> Le smart contract mint le NFT sur votre wallet.</li>
+              <li className="flex gap-2"><CheckCircle size={16} className="text-green-500 shrink-0" /> Vous recevez une notification par email.</li>
+            </ul>
+          </div>
+          
+          <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-blue-900/50 p-6 rounded-2xl">
+             <h3 className="font-bold text-blue-300 mb-2">Mode Démo Testnet</h3>
+             <p className="text-xs text-blue-400/80">Aucun vrai WAX ne sera débité. Assurez-vous d'être connecté au Testnet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const DashboardView = () => (
+    <div className="max-w-6xl mx-auto py-12 px-6 animate-in fade-in">
+      <h2 className="text-4xl font-bold mb-8">Vos Créations (Mock)</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Mock Data Cards */}
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-600 transition group">
+            <div className="h-64 bg-gray-800 relative overflow-hidden">
+               {/* Placeholder Image */}
+               <img src={`https://picsum.photos/seed/${i * 123}/400/400`} alt="NFT" className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+               <div className="absolute top-2 right-2 bg-black/70 backdrop-blur px-2 py-1 rounded text-xs font-bold text-yellow-400 border border-yellow-400/30">
+                 #{1020 + i}
+               </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-bold text-lg text-white mb-1">Cyber Artifact #{i}</h3>
+              <p className="text-xs text-gray-500 mb-4">Collection: Artomatique Genesis</p>
+              <div className="flex justify-between items-center">
+                <span className={`text-xs px-2 py-1 rounded font-mono ${i === 2 ? 'bg-purple-900 text-purple-300' : 'bg-gray-800 text-gray-400'}`}>
+                  {i === 2 ? 'EPIC' : 'COMMON'}
+                </span>
+                <button className="text-xs text-blue-400 hover:text-white">Voir sur AtomicHub ↗</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const FeatureCard = ({ icon, title, desc }) => (
+    <div className="bg-gray-900/40 border border-gray-800 p-6 rounded-2xl hover:bg-gray-900 transition hover:border-gray-600">
+      <div className="mb-4">{icon}</div>
+      <h3 className="font-bold text-xl mb-2">{title}</h3>
+      <p className="text-gray-400 leading-relaxed">{desc}</p>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-black text-gray-100 font-sans selection:bg-yellow-500 selection:text-black">
+      <Navbar />
+      
+      {/* Notification Toast */}
+      {notification && (
+        <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right z-50 ${notification.type === 'error' ? 'bg-red-900/90 text-red-100 border border-red-700' : 'bg-green-900/90 text-green-100 border border-green-700'}`}>
+          {notification.type === 'error' ? '⚠️' : '✅'} {notification.msg}
+        </div>
+      )}
+
+      {/* Main Content Switcher */}
+      {view === 'home' && <Hero />}
+      {view === 'create' && <CreateView />}
+      {view === 'dashboard' && <DashboardView />}
+      
+      {/* Footer */}
+      <footer className="border-t border-gray-900 mt-20 py-10 text-center text-gray-600 text-sm">
+        <p>© 2024 Artomatique. Powered by n8n & WAX Blockchain.</p>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
